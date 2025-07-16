@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Điều khiển ThingSpeak</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background: #f0f4f8;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .btn {
+      padding: 12px 28px;
+      margin: 10px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .btn-bat {
+      background-color: #1d04ff;
+      color: #ffffff;
+    }
+    .btn-tat {
+      background-color: #07ec07;
+      color: rgb(0, 0, 0);
+    }
+    .btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #555;
+    }
+    #states {
+      margin-top: 24px;
+      font-size: 18px;
+    }
+    .state-indicator {
+      display: inline-block;
+      min-width: 32px;
+      font-weight: bold;
+      margin: 0 5px 0 0;
+      padding: 8px 16px;
+      border-radius: 5px;
+      background: #eee;
+    }
+    .on {
+      background-color: #7aff8d;
+      color: #000;
+    }
+    .off {
+      background-color: #ffbaba;
+      color: #444;
+    }
+    .led-label {
+      margin: 0 15px 0 0;
+      display: inline-block;
+      width: 180px;
+      text-align: right;
+    }
+    @media (max-width: 700px) {
+      .led-label {width: 105px;}
+      #states span {display: block; margin: 8px auto;}
+    }
+  </style>
+</head>
+<body>
+  <h2>Điều khiển ThingSpeak</h2>
+  <button id="btn1" class="btn btn-bat" onclick="toggleButton(0)">BẬT</button>
+  <button id="btn2" class="btn btn-bat" onclick="toggleButton(1)">BẬT</button>
+  <button id="btn3" class="btn btn-bat" onclick="toggleButton(2)">BẬT</button>
+
+  <div id="status">Đang chờ thao tác...</div>
+
+  <!-- các LED -->
+  <div id="states">
+    <span>
+      <span class="led-label">LED 1:</span>
+      <span id="state1" class="state-indicator off">OFF</span>
+    </span>
+    <span>
+      <span class="led-label">LED 2:</span>
+      <span id="state2" class="state-indicator off">OFF</span>
+    </span>
+    <span>
+      <span class="led-label">LED 3:</span>
+      <span id="state3" class="state-indicator off">OFF</span>
+    </span>
+  </div>
+
+  <div>
+  </div>
+ <div>
+  </div> <div>
+  </div> <div>
+  </div> <div>
+  </div> <div>
+  </div>
+
+  <!-- Ghi chú hướng dẫn -->
+  <div style="margin-top:16px; max-width: 700px; margin-left:auto; margin-right:auto; font-size: 16px; color: #121212;">
+    <b>Việc gửi dữ liệu có thể lâu hơn dự kiến</b> vì server sẽ làm mới sau 15 giây.<br>
+    Hãy <b>liên hệ lại ngay với chúng tôi</b> khi 
+    <b style="color:#e30016;">trên 30 giây</b> mà trạng thái
+    <b>LED 1, LED 2, LED 3</b> phía trên vẫn không thay đổi.
+  </div>
+
+  <script>
+    let states = [false, false, false]; // dự kiến để gửi lên ThingSpeak
+    let sending = false;
+    let countdown = 0;
+    let countdownInterval = null;
+    const apiKey = "JZTKGG4S7ELIOD15";
+    const channelId = "3010991"; // Đổi thành channel ID thật của bạn
+    const readApiKey = ""; // Không cần nếu public
+
+    // Cập nhật nút bấm
+    function updateButtons() {
+      for (let i = 0; i < 3; i++) {
+        let btn = document.getElementById('btn' + (i + 1));
+        btn.disabled = sending;
+        if (states[i]) {
+          btn.className = 'btn btn-tat';
+          btn.textContent = 'TẮT';
+        } else {
+          btn.className = 'btn btn-bat';
+          btn.textContent = 'BẬT';
+        }
+      }
+    }
+
+    function toggleButton(index) {
+      if (sending) return; // chặn khi đang gửi
+      states[index] = !states[index];
+      updateButtons();
+      sendData();
+    }
+
+    function sendData() {
+      sending = true;
+      updateButtons();
+      countdown = 15;
+      updateStatusCountdown();
+      countdownInterval = setInterval(() => {
+        countdown--;
+        updateStatusCountdown();
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          sending = false;
+          updateButtons();
+          document.getElementById('status').textContent = "Sẵn sàng thao tác";
+        }
+      }, 1000);
+
+      let fields = states.map(state => state ? 1 : 0);
+      const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field1=${fields[0]}&field2=${fields[1]}&field3=${fields[2]}`;
+
+      fetch(url)
+        .catch(error => {
+          document.getElementById('status').textContent = "Có lỗi khi gửi dữ liệu";
+        });
+      // Không xử lý thông báo ID thành công/thất bại trong lúc đợi
+    }
+    function updateStatusCountdown() {
+      document.getElementById('status').textContent = `Đang gửi dữ liệu lên ThingSpeak... (${countdown}s)`;
+    }
+
+    // Đọc từ Thingspeak fields mỗi giây
+    function pollStates() {
+      // Lấy dữ liệu từ feed cuối cùng dưới dạng JSON
+      let url = `https://api.thingspeak.com/channels/${channelId}/feeds/last.json`;
+      if (readApiKey) url += `?api_key=${readApiKey}`; // Private thì thêm read key
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          const v = [
+            parseInt(data.field1) === 1,
+            parseInt(data.field2) === 1,
+            parseInt(data.field3) === 1,
+          ];
+          // Hiển thị lên hiện tại
+          for (let i = 0; i < 3; i++) {
+            let el = document.getElementById("state" + (i + 1));
+            if (v[i]) {
+              el.textContent = "ON";
+              el.className = "state-indicator on";
+            } else {
+              el.textContent = "OFF";
+              el.className = "state-indicator off";
+            }
+          }
+        })
+        .catch(er => {
+          // Nếu lỗi thì thôi, giữ nguyên cũ
+        });
+    }
+    setInterval(pollStates, 1000);
+
+    window.onload = function () {
+      updateButtons();
+      pollStates();
+    };
+  </script>
+</body>
+</html>
+
+
