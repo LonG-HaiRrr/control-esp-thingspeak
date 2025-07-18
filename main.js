@@ -2,8 +2,6 @@
 const channelId = 3010991;
 const apiKey   = "JZTKGG4S7ELIOD15";
 const readApiKey = "JOOY7F6GQUPDVQRC";
-const ledFields = [1,2,3];    // field1,2,3
-const adcField = 4;
 
 // ==== Theme ====
 function setTheme(dark) {
@@ -50,7 +48,6 @@ function updateButtons() {
 }
 function toggleButton(index) {
   if (sending) return;
-  // Đổi trạng thái led dự kiến, gửi update lên ThingSpeak
   states[index] = !states[index];
   updateButtons();
   addPressHistory(index);
@@ -59,43 +56,48 @@ function toggleButton(index) {
 function sendData() {
   sending = true;
   updateButtons();
-  // Chuẩn bị field dữ liệu gửi lên kênh mới (field1/2/3 là trạng thái LED)
   let url = `https://api.thingspeak.com/update?api_key=${apiKey}`;
-  for(let i=0;i<3;i++) url += `&field${i+1}=`+(states[i]?1:0);
+  for(let i=0;i<3;i++) url += `&field${i+1}=${states[i]?1:0}`;
   fetch(url)
     .then(()=>{ sending=false; updateButtons(); })
     .catch(()=>{ sending=false; updateButtons(); });
 }
-// Đọc trạng thái từ ThingSpeak cập nhật giao diện
-function pollStates() {
+
+// ==== CẬP NHẬT TRẠNG THÁI + ADC (CHUNG MỘT LẦN) ====
+// Lần nào cũng dùng chung 1 giá trị adcValue cho chart + gauge
+function pollStatesAndADC() {
   let url = `https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${readApiKey}`;
   fetch(url)
-  .then(res=>res.json())
-  .then(data=>{
-    // Field 1/2/3: Trang thai LED, Field 4 (adc)
-    let led = [
-      (parseInt(data.field1)||0)===1,
-      (parseInt(data.field2)||0)===1,
-      (parseInt(data.field3)||0)===1
-    ];
-    for(let i=0;i<3;i++) {
-      document.getElementById('state'+(i+1)).textContent = led[i] ? 'ON' : 'OFF';
-      document.getElementById('state'+(i+1)).className = 'state-indicator '+(led[i]?'on':'off');
-      states[i] = led[i];
-    }
-    updateButtons();
-    if(data.field4) updateAdcVisual(Number(data.field4));
-  });
+    .then(res=>res.json())
+    .then(data=>{
+      // Field 1/2/3: LED, Field 4: adc
+      let led = [
+        (parseInt(data.field1)||0)===1,
+        (parseInt(data.field2)||0)===1,
+        (parseInt(data.field3)||0)===1
+      ];
+      for(let i=0;i<3;i++) {
+        document.getElementById('state'+(i+1)).textContent = led[i] ? 'ON' : 'OFF';
+        document.getElementById('state'+(i+1)).className = 'state-indicator '+(led[i]?'on':'off');
+        states[i] = led[i];
+      }
+      updateButtons();
+      if(data.field4) updateAdcBoth(Number(data.field4));
+    });
 }
-setInterval(pollStates, 1300);
+
+// Tăng thời gian cập nhật lên 15s (15000ms)
+setInterval(pollStatesAndADC, 5000);
+
 window.onload = function () {
-  pollStates();
+  pollStatesAndADC();
   updateButtons();
   loadPressHistory();
   renderPressHistory();
 };
 
-// ==== Biểu đồ & Gauge ADC ====
+// ==== Biểu đồ & Gauge ADC dùng cùng 1 giá trị ====
+// Luôn luôn update cùng 1 lúc, cùng dữ liệu
 let adcData = [];
 const adcMaxLength = 30;
 const adcLineCtx = document.getElementById('adcLineChart').getContext('2d');
@@ -146,7 +148,9 @@ function drawAdcGauge(value) {
     ctx.fillText(v, tx, ty);
   }
 }
-function updateAdcVisual(newVal) {
+// Hàm cập nhật CHUNG cho cả Line chart và Gauge
+function updateAdcBoth(newVal) {
+  // Biểu đồ đường
   const now = new Date();
   const label = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
   adcData.push({x: label, y: newVal});
@@ -154,6 +158,7 @@ function updateAdcVisual(newVal) {
   adcLineChart.data.labels = adcData.map(v=>v.x);
   adcLineChart.data.datasets[0].data = adcData.map(v=>v.y);
   adcLineChart.update();
+  // Gauge
   drawAdcGauge(newVal);
   document.getElementById('adcGaugeValue').textContent = newVal;
 }
@@ -196,12 +201,12 @@ function renderPressHistory() {
   document.getElementById("press-count").textContent = pressCount || 0;
 }
 
-/* ========== INFO CHANEL ========== */
+// ==== INFO CHANNEL ====
 function timeAgo(dateStr) {
   if (!dateStr) return "--";
   const now = new Date();
   const d = new Date(dateStr);
-  const diff = (now - d) / 1000; // giây
+  const diff = (now - d) / 1000;
   if (isNaN(diff)) return "--";
   if (diff < 60) return `khoảng ${Math.round(diff)} giây trước`;
   if (diff < 3600) return `khoảng ${Math.round(diff/60)} phút trước`;

@@ -41,3 +41,35 @@ body.light-mode h2 { color: #212;}
 body.light-mode #note-block { color: #121212 !important;}
 body.light-mode #history-press-table td {background:#fff;color:#222;}
 body.light-mode #history-press-table th {background-color: #d2e5f6; color:#0c3d65;}
+#adcLineChart {
+  width: 500px !important;
+  height: 250px !important;
+  max-width: 100%;
+}
+.adc-visual-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 38px; /* khoảng cách giữa 2 canvas */
+  margin: 28px auto 0 auto;
+  max-width: 1000px;
+}
+@media (max-width: 900px) {
+  .adc-visual-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+}
+#adcLineChart {
+  width: 500px !important;
+  height: 250px !important;
+  max-width: 100%;
+  display: block;
+}
+#adcGauge {
+  width: 220px !important;
+  height: 220px !important;
+  display: block;
+}
+
