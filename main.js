@@ -232,12 +232,6 @@ function updateAdcBoth(newVal) {
 
 
 // ==== thêm  ====
-
-
-
-
-
-
 function fetchThingSpeakInfo() {
   // Lấy thông tin channel
   fetch(`https://api.thingspeak.com/channels/${channelId}.json?api_key=${readApiKey}`)
@@ -250,6 +244,7 @@ function fetchThingSpeakInfo() {
         dt.toLocaleTimeString('vi-VN', {hour12: false}) + " " + dt.toLocaleDateString('vi-VN');
       // Số lượng entries
       document.getElementById('ts-entries').textContent = data.last_entry_id || "--";
+      
     });
   // Lấy entry cuối cùng
   fetch(`https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${readApiKey}`)
@@ -259,9 +254,11 @@ function fetchThingSpeakInfo() {
       dt = new Date(dt.getTime());    // hoặc thêm + 7*3600*1000
       document.getElementById('ts-lastentry').textContent = 
         dt.toLocaleTimeString('vi-VN', {hour12: false}) + " " + dt.toLocaleDateString('vi-VN');
+        let thoigiannow = Date.now();
+      document.getElementById('tinhTHoiGian').textContent = 16 - Math.floor((thoigiannow - dt.getTime())/1000-150);  
     });
 }
-setInterval(fetchThingSpeakInfo, 10000); // 10s cập nhật 1 lần
+setInterval(fetchThingSpeakInfo, 1000); // 1s cập nhật 1 lần
 window.onload = function () {
   pollStatesAndADC();
   updateButtons();

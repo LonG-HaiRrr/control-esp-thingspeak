@@ -69,6 +69,8 @@ body.dark-mode .state-indicator { background: #eee; color: #000; }
 #adcGauge { width: 220px !important; height: 220px !important; display: block;}
 .adc-visual-row {display: flex;justify-content: center;align-items: flex-start;gap: 38px; margin: 28px auto 0 auto;max-width: 1000px;}
 @media (max-width: 900px) { .adc-visual-row {flex-direction: column;align-items: center;gap: 16px;} #adcLineChart {width: 100% !important;} }
+
+
 .toggle input[type="checkbox"] {
   position: absolute;
   opacity: 0;
