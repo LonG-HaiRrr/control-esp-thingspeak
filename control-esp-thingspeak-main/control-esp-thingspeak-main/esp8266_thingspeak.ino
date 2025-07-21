@@ -1,18 +1,15 @@
 #include <ESP8266WiFi.h>
 #include "ThingSpeak.h"
 
-const char* ssid = "cuongbeo155";
-const char* password = "123456789";
+const char* ssid = "TP-LINK_6B6C";
+const char* password = "07567902";
 #define CHANNEL_ID 3010991
 const char* WRITE_API_KEY = "JZTKGG4S7ELIOD15";
 
 #define LED1_PIN D1
-#define LED2_PIN D5
-#define LED3_PIN D6 
+#define LED2_PIN D4
+#define LED3_PIN D3
 #define BUTTON_PIN D2
-#define LED4_PIN D9    // sáng led khi bạn bấm nút ?
-#define LED7_PIN D4   // còi khi gửi thành công
-
 
 unsigned long lastUploadTime = 0;
 unsigned long lastReadTime = 0;
@@ -26,9 +23,7 @@ void setup() {
   pinMode(LED1_PIN, OUTPUT); digitalWrite(LED1_PIN, LOW);
   pinMode(LED2_PIN, OUTPUT); digitalWrite(LED2_PIN, LOW);
   pinMode(LED3_PIN, OUTPUT); digitalWrite(LED3_PIN, LOW);
-  pinMode(BUTTON_PIN, INPUT);            // <-- dùng INPUT, đúng với pull-down!
-  pinMode(LED4_PIN, OUTPUT); digitalWrite(LED4_PIN, HIGH); // LOGIC ĐẢO: HIGH = OFF, LOW = ON
-  pinMode(LED7_PIN, OUTPUT); digitalWrite(LED7_PIN, LOW);  // Đặt trạng thái ban đầu TẮT
+  pinMode(BUTTON_PIN, INPUT);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) { delay(500); }
   ThingSpeak.begin(client);
@@ -46,39 +41,19 @@ void loop() {
     if (!isnan(led3)) digitalWrite(LED3_PIN, led3);
   }
 
-  // Phát hiện nhấn nút cạnh lên (từ LOW lên HIGH)
-  static int prevBtn = LOW;    // Giá trị mặc định là LOW vì pull-down
-  static int pushedFlag = 0;
+  // Xử lý nút nhấn: chỉ log khi chuyển từ LOW -> HIGH
+  static int prevBtn = 0;
   int btn = digitalRead(BUTTON_PIN);
-  if (btn == HIGH && prevBtn == LOW) { // vừa nhấn nút!
-    pushedFlag = 1; 
-    Serial.print("bạn vừa bấm nút ? ");
-    digitalWrite(LED4_PIN, HIGH);
-  }
-  else {
-  digitalWrite(LED4_PIN, LOW);
-  }
+  int pushed = (btn == HIGH && prevBtn == LOW) ? 1 : 0;
   prevBtn = btn;
 
-  // Gửi dữ liệu lên Thingspeak mỗi 15s
+  // Mỗi chu kỳ uploadInterval, gửi dữ liệu ADC & nút nhấn lên Thingspeak
   if (millis() - lastUploadTime >= uploadInterval) {
     lastUploadTime = millis();
     int adcValue = analogRead(A0);
     ThingSpeak.setField(4, adcValue);  // field 4: ADC
-    ThingSpeak.setField(5, pushedFlag); // field 5: bấm nút
-    for (int i = 1; i <= 3; i++)
-      ThingSpeak.setField(i, digitalRead((i == 1) ? LED1_PIN : (i == 2) ? LED2_PIN : LED3_PIN));
+    ThingSpeak.setField(5, pushed); // field 5: Lịch sử bấm nút (1 lần nhấn sẽ ghi 1)
+    for(int i=1;i<=3;i++)  ThingSpeak.setField(i, digitalRead((i==1)?LED1_PIN:(i==2)?LED2_PIN:LED3_PIN));
     ThingSpeak.writeFields(CHANNEL_ID, WRITE_API_KEY);
-
-    // Debug Serial
-    Serial.print("prevBtn = "); Serial.print(prevBtn);
-    Serial.print(" btn = "); Serial.print(btn);
-    Serial.print(" pushedFlag = "); Serial.println(pushedFlag);
-
-// Bật còi 200ms rồi tắt
-digitalWrite(LED7_PIN, HIGH);
-delay(900);
-digitalWrite(LED7_PIN, LOW);
-    pushedFlag = 0; // reset cờ sau khi gửi
   }
 }

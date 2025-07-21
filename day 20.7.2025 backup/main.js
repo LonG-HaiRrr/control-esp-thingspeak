@@ -1,4 +1,4 @@
-// ==== Config channel/key ==== 
+// ==== Config channel/key ====
 const channelId = 3010991;
 const apiKey = "JZTKGG4S7ELIOD15";
 const readApiKey = "JOOY7F6GQUPDVQRC";
@@ -39,72 +39,80 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// ==== Nút điều khiển/đọc trạng thái/ gửi lệnh ==== 
+// ==== Nút điều khiển/đọc trạng thái/ gửi lệnh ====
 let states = [false, false, false];
 let sending = false;
-let sendInterval = null;
-let countdownTimer = null;
-let countdown = 0;
+let countdownInterval = null;
+const countdownSeconds = 6;
+
+function setStatus(msg, color = '') {
+  const statusDiv = document.getElementById('status');
+  statusDiv.textContent = msg;
+  statusDiv.style.color = color;
+}
 
 function updateButtons() {
   for (let i = 0; i < 3; i++) {
-    const btn = document.getElementById('btn' + (i + 1));
+    let btn = document.getElementById('btn' + (i + 1));
     btn.disabled = sending;
     btn.className = states[i] ? 'btn btn-tat' : 'btn btn-bat';
-    btn.textContent = (states[i] ? 'TẮT' : 'BẬT') + ` LED ${i + 1}`;
+    btn.textContent = (states[i] ? 'TẮT' : 'BẬT') + ` LED ${i+1}`;
   }
-}
-
-function updateStatus(msg) {
-  document.getElementById('status').textContent = msg;
-}
-
-function sendData() {
-  let url = `https://api.thingspeak.com/update?api_key=${apiKey}`;
-  for (let i = 0; i < 3; i++) url += `&field${i + 1}=${states[i] ? 1 : 0}`;
-  fetch(url);
-  // Không làm gì thêm, không set sending ở đây
 }
 
 function toggleButton(index) {
   if (sending) return;
   states[index] = !states[index];
   updateButtons();
-
-  sending = true;
-  countdown = 30;
-  updateStatus(`Đang gửi nút ${index + 1} đến ThingSpeak, vui lòng chờ ${countdown}s`);
-
-  sendData(); // Gửi ngay lần đầu
-
-  // Gửi lặp mỗi 
-  sendInterval = setInterval(() => {
-    sendData();
-  }, 1000);
-
-  // Đếm ngược và unlock sau 15s
-  countdownTimer = setInterval(() => {
-    countdown -= 1;
-    if (countdown > 0) {
-      updateStatus(`Đang gửi nút ${index + 1} đến ThingSpeak, vui lòng chờ ${countdown}s (vui lòng chỉ bấm nút huỷ chờ khi đã thay đổi trạng thái nút)`);
-    } else {
-      clearInterval(sendInterval);
-      clearInterval(countdownTimer);
-      sending = false;
-      updateButtons();
-      updateStatus("Đang chờ thao tác...");
-    }
-  }, 1000);
+  sendData(index);
 }
 
+function sendData(indexChanged) {
+  sending = true;
+  updateButtons();
+  let ledStatus = states[indexChanged] ? "bật" : "tắt";
+  let ledName = `LED ${indexChanged+1}`;
+  let left = countdownSeconds;
+
+  clearInterval(countdownInterval);
+  setStatus(`Đã gửi tín hiệu: ${ledStatus} ${ledName} đến Thingspeak, vui lòng chờ... (${left}s)`, "orange");
+
+  // Gửi dữ liệu lên ThingSpeak
+  let url = `https://api.thingspeak.com/update?api_key=${apiKey}`;
+  for (let i = 0; i < 3; i++)
+    url += `&field${i+1}=${states[i]?1:0}`;
+
+  fetch(url)
+    .then(() => {
+      // Bắt đầu countdown đếm ngược, khóa nút trong lúc chờ
+      countdownInterval = setInterval(() => {
+        left--;
+        if (left > 0) {
+          setStatus(`Đã gửi tín hiệu: ${ledStatus} ${ledName} đến Thingspeak, vui lòng chờ... (${left}s)`, "orange");
+        } else {
+          clearInterval(countdownInterval);
+          setStatus('Đang chờ thao tác...', "");
+          sending = false;
+          updateButtons();
+          pollStatesled();
+          pollAdcc();
+        }
+      }, 1000);
+    })
+    .catch(() => {
+      setStatus('Lỗi gửi tín hiệu! Thử lại.', "red");
+      sending = false;
+      updateButtons();
+    });
+}
 
 // ==== Đọc trạng thái + ADC ====
-function pollStatesAndADC() {
+function pollStatesled() {
   let url = `https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${readApiKey}`;
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      // Field 1/2/3: LED, Field 4: adc
+      // Field 1/2/3: LED
       let led = [
         (parseInt(data.field1)||0)===1,
         (parseInt(data.field2)||0)===1,
@@ -115,29 +123,34 @@ function pollStatesAndADC() {
         document.getElementById('state'+(i+1)).className = 'state-indicator '+(led[i]?'on':'off');
         states[i] = led[i];
       }
+    });
+}
+function pollAdcc() {
+  let url = `https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${readApiKey}`;
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      //  Field 4: adc
       updateButtons();
       if(data.field4) updateAdcBoth(Number(data.field4));
     });
 }
+setInterval(pollStatesled, 3000);
+setInterval(pollAdcc, 8000);
 
-// Lấy lịch sử bấm nút từ field 5 ThingSpeak:
+// ==== Lịch sử bấm nút từ field 5 ThingSpeak ====
 async function renderHistoryFromThingSpeak() {
   let url = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&results=20`;
   let res = await fetch(url);
   let data = await res.json();
   let feeds = data.feeds || [];
-
-  // Lọc các lần field5 == 1
   let btnHistory = [];
-  for (let f of feeds.reverse()) { // mới nhất lên đầu
+  for (let f of feeds.reverse()) {
     if (f.field5 && parseInt(f.field5) === 1) {
       let dt = new Date(f.created_at);
-      dt = new Date(dt.getTime() + 7 * 60 * 60 * 1000); // GMT+7
+      dt = new Date(dt.getTime() + 7 * 60 * 60 * 1000);
       let timeDisplay = dt.toLocaleTimeString('vi-VN', {hour12: false}) + " " + dt.toLocaleDateString('vi-VN');
-      btnHistory.push({
-        time: timeDisplay,
-        btn: 'ESP gửi lên'
-      });
+      btnHistory.push({ time: timeDisplay, btn: 'ESP gửi lên' });
       if (btnHistory.length >= 10) break;
     }
   }
@@ -150,15 +163,7 @@ async function renderHistoryFromThingSpeak() {
   });
   document.getElementById('press-count').textContent = btnHistory.length;
 }
-
-setInterval(pollStatesAndADC, 5000);
 setInterval(renderHistoryFromThingSpeak, 5000);
-
-window.onload = function () {
-  pollStatesAndADC();
-  updateButtons();
-  renderHistoryFromThingSpeak();
-};
 
 // ==== Biểu đồ & Gauge ADC ====
 let adcData = [];
@@ -229,60 +234,51 @@ function updateAdcBoth(newVal) {
   document.getElementById('adcGaugeValue').textContent = newVal;
 }
 
-
-
-// ==== thêm  ====
-
-
-
-
-
+// ==== Thông tin khởi tạo channel, thao tác cuối ====
+let prevCreatedAt = ""; // Lưu lại created_at cũ
+let lastUpdateTimestamp = 0; // timestamp dạng millisec
 
 function fetchThingSpeakInfo() {
-  // Lấy thông tin channel
+  // Thông tin channel (không thay đổi)
   fetch(`https://api.thingspeak.com/channels/${channelId}.json?api_key=${readApiKey}`)
     .then(res => res.json())
     .then(data => {
-      // Ngày tạo channel
       let dt = new Date(data.created_at);
-      dt = new Date(dt.getTime() );         // hoặc thêm + 7*3600*1000
-      document.getElementById('ts-created').textContent = 
-        dt.toLocaleTimeString('vi-VN', {hour12: false}) + " " + dt.toLocaleDateString('vi-VN');
-      // Số lượng entries
+      document.getElementById('ts-created').textContent =
+        dt.toLocaleTimeString('vi-VN', { hour12: false }) + " " + dt.toLocaleDateString('vi-VN');
       document.getElementById('ts-entries').textContent = data.last_entry_id || "--";
     });
-  // Lấy entry cuối cùng
+
+  // Thông tin bản ghi mới nhất
   fetch(`https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${readApiKey}`)
-    .then(res=>res.json())
-    .then(data=>{
-      let dt = new Date(data.created_at);
-      dt = new Date(dt.getTime());    // hoặc thêm + 7*3600*1000
-      document.getElementById('ts-lastentry').textContent = 
-        dt.toLocaleTimeString('vi-VN', {hour12: false}) + " " + dt.toLocaleDateString('vi-VN');
+    .then(res => res.json())
+    .then(data => {
+      let dt = new Date(data.created_at);  // ISO format
+      document.getElementById('ts-lastentry').textContent =
+        dt.toLocaleTimeString('vi-VN', { hour12: false }) + " " + dt.toLocaleDateString('vi-VN');
+
+      // Nếu bản ghi mới → cập nhật thời điểm nhận
+      if (data.created_at !== prevCreatedAt) {
+        prevCreatedAt = data.created_at;
+        lastUpdateTimestamp = Date.now();
+      }
+
+      // Tính số mili giây đã trôi qua kể từ lần update cuối
+      let millisElapsed = Date.now() - lastUpdateTimestamp;
+      document.getElementById('ts-nextupdate').textContent = millisElapsed + " ms";
     });
 }
-setInterval(fetchThingSpeakInfo, 10000); // 10s cập nhật 1 lần
+
+
+// Gọi hàm mỗi giây để đồng bộ countdown (hoặc vẫn giữ 10s)
+setInterval(fetchThingSpeakInfo, 100); // hoặc giữ nguyên 10s tùy ý, càng nhanh càng realtime
+
+
+// ==== Init ====
 window.onload = function () {
-  pollStatesAndADC();
+  pollStatesled();
+  pollAdcc();
   updateButtons();
-  renderHistoryFromThingSpeak(); // hoặc hàm lịch sử của bạn
+  renderHistoryFromThingSpeak();
   fetchThingSpeakInfo();
 };
-
-
-// Sự kiện bấm vào checkbox 'checkbox1'
-document.getElementById('checkbox1').addEventListener('click', function(e) {
-  if (sending) {
-    clearInterval(sendInterval);
-    clearInterval(countdownTimer);
-    sending = false;
-    updateButtons();
-    updateStatus("Đang chờ thao tác...");
-  }
-  // Luôn set lại checked (checkbox bật lại)
-  setTimeout(() => { 
-    this.checked = true; 
-  }, 50); // delay nhỏ cho tránh lỗi event
-  e.preventDefault();  // Ngăn đổi trạng thái checkbox bằng click
-});
-

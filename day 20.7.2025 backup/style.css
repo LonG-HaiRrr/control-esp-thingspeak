@@ -1,0 +1,76 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin-top: 50px;
+  background: #191b22;
+  color: #fff;
+  transition: background 0.3s, color 0.3s;
+}
+
+h2 { color: #eee; margin-bottom: 30px; }
+
+.btn { padding: 12px 28px; margin: 10px; font-size: 18px; border-radius: 8px; border: none; cursor: pointer; }
+.btn-bat { background-color: #868cae; color: #fff; }
+.btn-tat { background-color: #46f846; color: #151515; }
+.btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+#states { margin-top: 24px; font-size: 18px; }
+.state-indicator { display: inline-block; min-width: 32px; font-weight: bold; margin: 0 5px 0 0; padding: 8px 16px; border-radius: 5px; background: #eee; color: #000; }
+.on { background-color: #397d5f!important; color: #fff!important;}
+.off{ background: #a53434!important; color:#fff!important;}
+.led-label { margin: 0 15px 0 0; display: inline-block; width: 120px; text-align: right;}
+@media (max-width:700px){ .led-label{width:80px;} #states span{display:block;margin:8px auto;}}
+
+#ts-info {position: absolute; top: 18px; left: 22px; text-align: left; font-size: 16px; color: #b9c1cc;background: rgba(25, 27, 34, 0.93);padding: 10px 22px 10px 16px; border-radius: 12px;z-index: 999;min-width: 185px;}
+.ts-info-label {color: #c3cade;} .ts-info-value {font-weight: 600;}
+
+.toggle-visual {position: absolute;top: 16px;right: 24px;z-index: 999;width: 78px;height: 36px;cursor: pointer;}
+.toggle-inner {position: relative;width: 100%;height: 100%;border-radius: 20px;}
+.toggle-bg-night, .toggle-bg-day {position: absolute;width: 100%;height: 100%;left: 0;top: 0;transition: opacity 0.25s;}
+.toggle-bg-night { background-image: url('night.jpg'); background-size: cover; background-position: center; opacity: 1; border-radius: 20px;}
+.toggle-bg-day { background-image: url('day.jpg'); background-size: cover; background-position: center; opacity: 0; border-radius: 20px;}
+.toggle.checked .toggle-bg-night {opacity: 0;}
+.toggle.checked .toggle-bg-day {opacity: 1;}
+.toggle-label-text {position: absolute;z-index: 3;font-weight: bold;font-size: 18px;}
+.day-label{top:9px;right:10px;opacity:0;transition:opacity 0.4s;}
+.night-label{top:9px;left:12px;opacity:1;transition:opacity 0.4s;color: #000000;}
+.toggle.checked .day-label{opacity:1;}
+.toggle.checked .night-label{opacity:0; }
+.toggle-btn-slider {
+  position: absolute; top: 4px; left: 5px; width: 28px; height: 28px; background: #fff; border-radius: 50%; box-shadow: 0 1px 6px rgba(0,0,0,0.20); transition: left 0.3s;}
+.toggle.checked .toggle-btn-slider { left: 45px;}
+#note-block{color:#fff;font-size:16px;padding:10px 0;}
+#ad-visual-block{margin:28px auto 0 auto;max-width:900px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:38px;}
+@media (max-width:900px){#adc-visual-block {flex-direction:column !important;gap:16px !important;}}
+#history-press-block {max-width:570px; margin:32px auto 0 auto;}
+#history-press-table {width: 100%; border-collapse: collapse;}
+#history-press-table th, #history-press-table td {padding:8px 0; border:1px solid #394b69;}
+#history-press-table td {background: #172233;}
+#history-press-table th {background: #2e3d5b; color:#b2c7ed;}
+#history-press-block h3 {font-size: 17px; color:#3b9efd;text-align:center; margin-bottom:8px;}
+.pressTotal {text-align:right; font-size:13px; color:#aad;}
+.adcChartLabel{font-size:15px;color:#236bc9;text-align:center;}
+.adcGaugeBlock{display:flex;flex-direction:column;align-items:center;}
+.adcGaugeValue{margin-top:10px;font-size:25px;color:#3112e4;font-family:monospace;}
+body.light-mode { background: #f0f4f8; color: #222;}
+body.light-mode h2 { color: #212;}
+body.light-mode #note-block { color: #121212 !important;}
+body.light-mode #history-press-table td {background:#fff;color:#222;}
+body.light-mode #history-press-table th {background-color: #d2e5f6; color:#0c3d65;}
+.adcChartLabel { transition: color 0.3s; }
+/* đổi màu ADC */
+body.light-mode .adcChartLabel { color: #236bc9;}
+body.dark-mode .adcChartLabel { color: #b2c7ed;}
+/* đổi màu chữ theo theme */
+body.light-mode .state-indicator { background: #eee; color: #000; }
+body.dark-mode .state-indicator { background: #eee; color: #000; }
+/* Canvas */
+#adcLineChart { width: 500px !important; height: 250px !important; max-width: 100%; display: block;}
+#adcGauge { width: 220px !important; height: 220px !important; display: block;}
+.adc-visual-row {display: flex;justify-content: center;align-items: flex-start;gap: 38px; margin: 28px auto 0 auto;max-width: 1000px;}
+@media (max-width: 900px) { .adc-visual-row {flex-direction: column;align-items: center;gap: 16px;} #adcLineChart {width: 100% !important;} }
+.toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
