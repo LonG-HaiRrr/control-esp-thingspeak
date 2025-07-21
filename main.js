@@ -21,6 +21,21 @@ function setTheme(dark) {
   adcLabels.forEach(el => {
     el.style.color = dark ? '#b2c7ed' : '#236bc9';
   });
+
+// 21/07/2025 
+  if (typeof adcLineChart !== "undefined") {
+  let isDark = dark;
+  let colorLine = isDark ? "#09f179ff" : "#8d0694ff"; //21/07/2025 màu lưới và chữ biểu đồ 
+  adcLineChart.options.plugins.title.color = colorLine;
+  adcLineChart.options.scales.x.grid.color = colorLine;
+  adcLineChart.options.scales.x.ticks.color = colorLine;
+  adcLineChart.options.scales.y.grid.color = colorLine;
+  adcLineChart.options.scales.y.ticks.color = colorLine;
+  adcLineChart.update();
+
+  // 21/07/2025 
+}
+
 }
 const THEME_KEY = "darkMode";
 function saveTheme(dark) { localStorage.setItem(THEME_KEY, dark ? "on" : "off"); }
@@ -169,11 +184,31 @@ let adcLineChart = new Chart(adcLineCtx, {
   type: 'line',
   data: {
     labels: [],
-    datasets: [{ label: 'ADC', backgroundColor: 'rgba(241,74,52,.10)', borderColor: '#e22929', borderWidth: 2, data: [], pointRadius: 4, pointBackgroundColor: '#e22929', tension: 0 }]
+    datasets: [{ label: 'đây là biểu đồ giá trị ADC nha', backgroundColor: 'rgba(241,74,52,.10)', borderColor: '#e22929', borderWidth: 2, data: [], pointRadius: 4, pointBackgroundColor: '#e22929', tension: 0 }]
   },
-  options: {
-    plugins: {legend:{display:false}, title:{display:true, text:'ADC', color:'#236bc9', font:{size:18, weight:'bold'}} }
+options: {
+  plugins: {
+    legend: { display: false },
+    title: {
+      display: true,
+      text: 'bieu do ADC nha hihi',
+      color: document.body.classList.contains('dark-mode') ? 'green' : '#222',
+      font: { size: 18, weight: 'bold' }
+    }
+  },
+  scales: {
+    x: {
+      grid: { color: document.body.classList.contains('dark-mode') ? 'green' : '#222' },
+      ticks: { color: document.body.classList.contains('dark-mode') ? 'green' : '#222', font: { size: 13 } }
+    },
+    y: {
+      grid: { color: document.body.classList.contains('dark-mode') ? 'green' : '#222' },
+      ticks: { color: document.body.classList.contains('dark-mode') ? 'green' : '#222', font: { size: 13 } }
+    }
   }
+}
+
+
 });
 function drawAdcGauge(value) {
   const ctx = adcGaugeCtx;
@@ -196,8 +231,8 @@ function drawAdcGauge(value) {
   ctx.rotate(angle);
   ctx.beginPath();
   ctx.moveTo(0, 0);
-  ctx.lineTo(radius-12, 0);
-  ctx.lineWidth = 7;
+  ctx.lineTo(radius-12, 0);   // -18,0 sẽ dài hơn
+  ctx.lineWidth = 2;
   ctx.strokeStyle = "#e22929";
   ctx.stroke();
   ctx.restore();
@@ -209,12 +244,16 @@ function drawAdcGauge(value) {
   ctx.font="12px monospace";
   ctx.textAlign="center";
   ctx.textBaseline="middle";
+
   for (let v=0;v<=1024;v+=128) {
     const a = Math.PI * (1 + 1.9*v/1024);
     const tx = centerX + Math.cos(a)*(radius-20);
     const ty = centerY + Math.sin(a)*(radius-20);
-    ctx.fillStyle="#222";
-    ctx.fillText(v, tx, ty);
+// chỉnh lại giao diện 21/07/2025
+    const isDark = document.body.classList.contains('dark-mode');
+ctx.fillStyle = isDark ? "#fff" : "#6d095eff"; // trắng cho dark, tím/hồng cho light
+ctx.fillText(v, tx, ty);
+// chỉnh lại giao diện 21/07/2025 Đổi màu số trên gauge theo giao diện - màu của số trên đồng hồ
   }
 }
 function updateAdcBoth(newVal) {
