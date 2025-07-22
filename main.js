@@ -142,15 +142,19 @@ async function renderHistoryFromThingSpeak() {
   let data = await res.json();
   let feeds = data.feeds || [];
 
-  // Lọc các lần field5 == 1
+  // Lệch 7h + 9 phút
+  const timeOffset = 0;
+
   let btnHistory = [];
-  for (let f of feeds.reverse()) { // mới nhất lên đầu
+  for (let f of feeds.reverse()) {
     if (f.field5 && parseInt(f.field5) === 1) {
       let dt = new Date(f.created_at);
-      dt = new Date(dt.getTime() + 7 * 60 * 60 * 1000); // GMT+7
-      let timeDisplay = dt.toLocaleTimeString('vi-VN', {hour12: false}) + " " + dt.toLocaleDateString('vi-VN');
+      dt = new Date(dt.getTime() + timeOffset); // GMT+7:09
+      let timeDisplay = dt.toLocaleTimeString('vi-VN', {hour12: false});
+      let dateDisplay = dt.toLocaleDateString('vi-VN');
       btnHistory.push({
         time: timeDisplay,
+        date: dateDisplay,
         btn: 'ESP gửi lên'
       });
       if (btnHistory.length >= 10) break;
@@ -160,11 +164,12 @@ async function renderHistoryFromThingSpeak() {
   tbody.innerHTML = "";
   btnHistory.forEach((val, idx) => {
     let row = document.createElement("tr");
-    row.innerHTML = `<td>${idx + 1}</td><td>${val.btn}</td><td>${val.time}</td>`;
+    row.innerHTML = `<td>${idx + 1}</td><td>${val.time}  ${'ngày'}    ${val.date}</td>`;
     tbody.appendChild(row);
   });
   document.getElementById('press-count').textContent = btnHistory.length;
 }
+
 
 setInterval(pollStatesAndADC, 5000);
 setInterval(renderHistoryFromThingSpeak, 5000);
