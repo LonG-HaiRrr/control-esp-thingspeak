@@ -149,7 +149,7 @@ async function renderHistoryFromThingSpeak() {
   for (let f of feeds.reverse()) {
     if (f.field5 && parseInt(f.field5) === 1) {
       let dt = new Date(f.created_at);
-      dt = new Date(dt.getTime() + timeOffset); // GMT+7:09
+      dt = new Date(dt.getTime() + timeOffset); 
       let timeDisplay = dt.toLocaleTimeString('vi-VN', {hour12: false});
       let dateDisplay = dt.toLocaleDateString('vi-VN');
       btnHistory.push({
