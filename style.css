@@ -41,7 +41,7 @@
   .toggle.checked .toggle-btn-slider { left: 45px;}
   #note-block{color:#fff;font-size:16px;padding:10px 0;}
   #ad-visual-block{margin:28px auto 0 auto;max-width:900px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:38px;}
-  @media (max-width:900px){#adc-visual-block {flex-direction:column !important;gap:16px !important;}}
+  /* @media (max-width:900px){#adc-visual-block {flex-direction:column !important;gap:16px !important;}} */
 
   .pressTotal {text-align:right; font-size:13px; color:#aad;}
   .adcChartLabel{font-size:15px;color:#236bc9;text-align:center;}
@@ -235,20 +235,21 @@ body:not(.dark-mode) .pressTotal {
   }
 
   #adc-visual-block {
-    flex-direction: column !important;
+    flex-direction: row !important;
     align-items: center;
     gap: 16px !important;
     margin-top: 16px !important;
   }
 
   #adcLineChart {
-    width: 100% !important;
+    width: 70% !important;
     height: auto !important;
   }
 
-  #adcGauge {
-    width: 290px !important;
-    height: 290px !important;
+  /* kích thước đồng hồ adc - mobile */
+  #adcGauge {  
+    width: 280px !important;
+    height: 280px !important;
   }
 
   .adcGaugeValue {
