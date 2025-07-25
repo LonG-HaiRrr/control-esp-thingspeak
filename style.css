@@ -228,7 +228,7 @@ body:not(.dark-mode) .pressTotal {
   }
 
   #note-block {
-    font-size: 32px;
+    font-size: 16px;
     max-width: 95%;
     margin: 0 auto;
     padding: 10px;
