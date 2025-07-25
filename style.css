@@ -209,8 +209,8 @@ body:not(.dark-mode) .pressTotal {
   }
 
   h2 {
-    font-size: 16px;
-    margin-top: 56px;
+    font-size: 25px;
+    margin-top: 20px;
     margin-bottom: 12px;
     padding: 0 8px;
   }
@@ -247,8 +247,8 @@ body:not(.dark-mode) .pressTotal {
   }
 
   #adcGauge {
-    width: 160px !important;
-    height: 160px !important;
+    width: 290px !important;
+    height: 290px !important;
   }
 
   .adcGaugeValue {
@@ -281,14 +281,20 @@ body:not(.dark-mode) .pressTotal {
 
   .led-label {
     width: auto !important;
-    text-align: left !important;
+    text-align: center !important;
   }
 
-  #states span {
-    display: flex !important;
+  #states {
+    display: block !important;
     justify-content: space-between;
     margin: 4px 0;
   }
+  /* .span_trang_thai {
+    text-align: center !important;
+    align-items: center;
+    padding-left: 400px;
+    padding-right: 400px;
+  } */
 }
 
 
