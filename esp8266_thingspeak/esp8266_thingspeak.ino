@@ -1,90 +1,113 @@
 #include <ESP8266WiFi.h>
-#include "ThingSpeak.h"
+#include <PubSubClient.h>
 
+// WiFi info
 const char* ssid = "TP-LINK_6B6C";
 const char* password = "07567902";
 
-#define CHANNEL_ID1 3010991
-const char* WRITE_API_KEY1 = "JZTKGG4S7ELIOD15";
-#define CHANNEL_ID2 3015544
-const char* WRITE_API_KEY2 = "V2MJGA7INPFLS39G";
+// MQTT info (HiveMQ Cloud)
+const char* mqtt_server = "72dc2407d9904812adc42646b74eeb05.s1.eu.hivemq.cloud";
+const int mqtt_port = 8883;
+const char* mqtt_user = "hivemq.webclient.1753343217820";
+const char* mqtt_pass = "W2Zy>n*QFqxD3Uj.7?1r";
 
-#define LED1_PIN D1   // io5
-#define LED2_PIN D5   // io14
-#define LED3_PIN D6   // io12
-#define BUTTON_PIN D2 // io4
-#define LED4_PIN D7   // io13
-#define LED7_PIN D4   // io2
+// MQTT topic
+const char* mqtt_pub_topic = "esp8266/button";   // gửi trạng thái nút nhấn
+const char* mqtt_sub_topic = "esp8266/control";  // nhận lệnh điều khiển
 
-unsigned long lastUploadTime = 0;
-unsigned long lastReadTime = 0;
-const unsigned long uploadInterval = 16000;  // 15 giây
-const unsigned long readInterval = 16000;    // 15 giây
-int led7_trangthai = LOW;
-WiFiClient client;
+// Nút nhấn
+#define BUTTON_PIN D2
 
-void setup() {
-  Serial.begin(115200);
-  delay(100);
-  pinMode(LED1_PIN, OUTPUT);    digitalWrite(LED1_PIN, LOW);
-  pinMode(LED2_PIN, OUTPUT);    digitalWrite(LED2_PIN, LOW);
-  pinMode(LED3_PIN, OUTPUT);    digitalWrite(LED3_PIN, LOW);
-  pinMode(BUTTON_PIN, INPUT);   // dùng INPUT, đúng với pull-down
-  pinMode(LED4_PIN, OUTPUT);    digitalWrite(LED4_PIN, HIGH);  // LOGIC ĐẢO: HIGH = OFF, LOW = ON
-  pinMode(LED7_PIN, OUTPUT);    digitalWrite(LED7_PIN, LOW);
+WiFiClientSecure espClient;
+PubSubClient client(espClient);
 
+int lastButtonState = HIGH;
+
+// Hàm xử lý khi có dữ liệu MQTT đến
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("📩 Nhận từ topic: ");
+  Serial.println(topic);
+
+  String message;
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.print("🔹 Nội dung: ");
+  Serial.println(message);
+
+  // Xử lý lệnh
+  if (message == "hello") {
+    Serial.println(message);
+  } else if (message == "led_on") {
+    Serial.println("👉 Lệnh bật LED (ví dụ)");
+    // digitalWrite(LED_BUILTIN, LOW);
+  } else if (message == "led_off") {
+    Serial.println("👉 Lệnh tắt LED (ví dụ)");
+    // digitalWrite(LED_BUILTIN, HIGH);
+  }
+}
+
+void setup_wifi() {
+  delay(10);
+  Serial.printf("🔌 Đang kết nối WiFi: %s\n", ssid);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
   }
+  Serial.println("\n✅ WiFi đã kết nối");
+}
 
-  ThingSpeak.begin(client);
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("🔁 Kết nối MQTT...");
+    if (client.connect("ESP8266Client", mqtt_user, mqtt_pass)) {
+      Serial.println("✅ MQTT đã kết nối");
+
+      // Đăng ký nhận topic
+      client.subscribe(mqtt_sub_topic);
+      Serial.printf("📥 Đã subscribe topic: %s\n", mqtt_sub_topic);
+
+    } else {
+      Serial.print("❌ Lỗi MQTT: ");
+      Serial.print(client.state());
+      Serial.println(" → thử lại sau 5s");
+      delay(5000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);  // Nút nối GND
+
+  setup_wifi();
+
+  // Kết nối MQTT
+  espClient.setInsecure();  // chỉ test, không bảo mật
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
 }
 
 void loop() {
-  // 1. Đọc nút
-  static int prevBtn = 0;
-  static int pushedFlag = 0;
-  int btn = digitalRead(BUTTON_PIN);
-  if (btn == 1 && prevBtn == 0) {
-    pushedFlag = 1;
-    Serial.print("c ");
-    digitalWrite(LED4_PIN, HIGH);
-  } else {
-    digitalWrite(LED4_PIN, LOW);
+  if (!client.connected()) {
+    reconnect();
   }
-  prevBtn = btn;
+  client.loop();
 
-  // 2. Đọc từ ThingSpeak
-  if (millis() - lastReadTime >= readInterval) {
-    lastReadTime = millis();
-    int led1 = ThingSpeak.readIntField(CHANNEL_ID1, 1);
-    int led2 = ThingSpeak.readIntField(CHANNEL_ID1, 2);
-    int led3 = ThingSpeak.readIntField(CHANNEL_ID1, 3);
-    if (!isnan(led1)) digitalWrite(LED1_PIN, led1);
-    if (!isnan(led2)) digitalWrite(LED2_PIN, led2);
-    if (!isnan(led3)) digitalWrite(LED3_PIN, led3);
+  // Đọc nút nhấn
+  int buttonState = digitalRead(BUTTON_PIN);
+  if (buttonState != lastButtonState) {
+    lastButtonState = buttonState;
+
+    if (buttonState == HIGH) {
+      Serial.println("👆 Nút được nhấn");
+      client.publish(mqtt_pub_topic, "on");
+    } else {
+      Serial.print("👇 Nút được thả");
+      client.publish(mqtt_pub_topic, "tat");
+    }
   }
 
-  // 3. Gửi dữ liệu lên ThingSpeak
-  if (millis() - lastUploadTime >= uploadInterval) {
-    lastUploadTime = millis();
-    int adcValue = analogRead(A0);
-    ThingSpeak.setField(4, adcValue);
-    ThingSpeak.setField(5, pushedFlag);
-    for (int i = 1; i <= 3; i++) {
-      int pin = (i == 1) ? LED1_PIN : (i == 2) ? LED2_PIN : LED3_PIN;
-      ThingSpeak.setField(i, digitalRead(pin));
-    }
-    ThingSpeak.writeFields(CHANNEL_ID1, WRITE_API_KEY1);
-    int adcValue1 = analogRead(A0);
-    ThingSpeak.setField(4, adcValue);
-    ThingSpeak.setField(5, pushedFlag);
-    for (int i = 1; i <= 3; i++) {
-      int pin = (i == 1) ? LED1_PIN : (i == 2) ? LED2_PIN : LED3_PIN;
-      ThingSpeak.setField(i, digitalRead(pin));
-    }
-    ThingSpeak.writeFields(CHANNEL_ID2, WRITE_API_KEY2);
-    pushedFlag = 0;
-  }
+  delay(50);  // debounce
 }

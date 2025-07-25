@@ -131,6 +131,7 @@ body.dark-mode #history-press-table th {
 }
 body.dark-mode #history-press-block h3 {
   color: #3b9efd;        /* tiêu đề bảng */
+  padding-left: 500px; padding-right: 500px; align-items: center;
 }
 body.dark-mode .pressTotal {
   color: #aad;          /* tông xanh nhạt */
@@ -147,6 +148,8 @@ body:not(.dark-mode) #history-press-table th {
 }
 body:not(.dark-mode) #history-press-block h3 {
   color: #3b9efd;
+  padding-left: 500px; padding-right: 500px; align-items: center;
+  padding-left: 500px; padding-right: 500px; align-items: center;
 }
 body:not(.dark-mode) .pressTotal {
   color: #28707b;        /* xanh đậm hơn */
@@ -170,7 +173,121 @@ body:not(.dark-mode) .pressTotal {
     margin-bottom:8px;
       padding-left: 50px;
   padding-right: 50px;
+  padding-left: 500px; padding-right: 500px; align-items: center;
   }
 
 
 /* chỉnh lại giao diện 22/07/2025 */
+
+
+
+/* chỉnh lại giao diện 25/07/2025 responsive cho mobile */
+@media (max-width: 700px) {
+  body {
+    font-size: 14px;
+    padding: 0 10px;
+  }
+
+  #ts-info {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    font-size: 13px;
+    padding: 6px 12px;
+    min-width: unset;
+    max-width: 60%;
+    z-index: 9999;
+  }
+
+  .toggle-visual {
+    position: fixed;
+    top: 8px;
+    right: 10px;
+    width: 60px;
+    height: 30px;
+    z-index: 9999;
+  }
+
+  h2 {
+    font-size: 16px;
+    margin-top: 56px;
+    margin-bottom: 12px;
+    padding: 0 8px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    margin: 6px;
+    font-size: 14px;
+  }
+
+  #status {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  #note-block {
+    font-size: 12px;
+    max-width: 95%;
+    margin: 0 auto;
+    padding: 10px;
+    line-height: 1.4;
+  }
+
+  #adc-visual-block {
+    flex-direction: column !important;
+    align-items: center;
+    gap: 16px !important;
+    margin-top: 16px !important;
+  }
+
+  #adcLineChart {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  #adcGauge {
+    width: 160px !important;
+    height: 160px !important;
+  }
+
+  .adcGaugeValue {
+    font-size: 18px;
+  }
+
+  #history-press-block {
+    padding: 0 10px !important;
+    margin-top: 20px;
+  }
+
+  #history-press-block h3 {
+    font-size: 15px;
+    padding: 0;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  #history-press-table th, #history-press-table td {
+    font-size: 13px;
+    padding: 6px 0;
+    white-space: nowrap;
+  }
+
+  .pressTotal {
+    font-size: 12px;
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  .led-label {
+    width: auto !important;
+    text-align: left !important;
+  }
+
+  #states span {
+    display: flex !important;
+    justify-content: space-between;
+    margin: 4px 0;
+  }
+}
+/* chỉnh lại giao diện 25/07/2025 */
